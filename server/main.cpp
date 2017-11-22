@@ -87,13 +87,61 @@ mutex Tools::lock;
 
 
 //int log_level=3;// 1.no log  2.print log 3 print and write log 4.write without print log
+int test()
+{
+    int i=10;
+    return i;
+}
+void test1(  int &t)
+{
+        cout<<t<<endl;
+}
+class A
+{
+public:
+    void fun(){
+
+        cout<<"fun"<<endl;
+    }
+};
+A ssss()
+{
+    A aa;
+    return aa;
+}
+void ttss(const A &tmp)
+{
+
+}
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+//    const int aaa=test();
 
+  //    const  int abc=1;
+//      // test1(abc);
+       //   int &sss=abc;
+
+//    const A pA;
+//     A &&testA=ssss();
+//     testA.fun();
+ //  testA.fun();
+
+
+//     A &testA=pA;
+    // A temp= ssss();
+   //ttss(ssss());
+   //const  int &pp=123;
+    //   A ttt();
+//       const A ssss;
+//        ssss.fun();
+//ttss(ssss());
+       //ttt.fun();
+
+  //  int &bbb=abc;
     Test t;
-    t.fun111();
+  t.fun111();
 
 //    Server *p_server=new Server();
 //    p_server->print_server_info();

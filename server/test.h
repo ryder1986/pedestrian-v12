@@ -96,7 +96,7 @@ public :
         RET_SUCCESS,
         RET_FAIL,
         RET_REFRESH
-     };
+    };
     enum PORTS{
         SERVER_PORT=12345,
         SERVER_DATA_OUTPUT_PORT=12346,
@@ -153,31 +153,31 @@ public :
         return *p_op;
     }
 
-//    static int pkg_get_len(QByteArray &ba)
-//    {
-//              return 0;
-//    }
-//    static void pkg_set_version(QByteArray &ba)
-//    {
+    //    static int pkg_get_len(QByteArray &ba)
+    //    {
+    //              return 0;
+    //    }
+    //    static void pkg_set_version(QByteArray &ba)
+    //    {
 
-//    }
-//    static int pkg_get_version(QByteArray &ba)
-//    {
-//              return ba;
-//    }
-//    static void pkg_set_op(QByteArray &ba)
-//    {
+    //    }
+    //    static int pkg_get_version(QByteArray &ba)
+    //    {
+    //              return ba;
+    //    }
+    //    static void pkg_set_op(QByteArray &ba)
+    //    {
 
-//    }
-//    static int pkg_get_get(QByteArray &ba)
-//    {
-//              return ba;
-//    }
+    //    }
+    //    static int pkg_get_get(QByteArray &ba)
+    //    {
+    //              return ba;
+    //    }
 
 
 
     static int encode_configuration_request(char *buf){
-     //   pkg_set_len(ba);
+        //   pkg_set_len(ba);
         memset(buf,0,Tools::BUF_LENGTH);
         pkg_set_len(buf,0);
         pkg_set_version(buf,VERSION);
@@ -186,8 +186,8 @@ public :
         return HEAD_LENGTH;
     }
     static int encode_configuration_reply(char *buf,int len,int ret){
-     //   pkg_set_len(ba);
-     //   memset(buf,0,BUF_MAX_LEN);
+        //   pkg_set_len(ba);
+        //   memset(buf,0,BUF_MAX_LEN);
         pkg_set_len(buf,len);
         pkg_set_version(buf,VERSION);
         pkg_set_op(buf,GET_CONFIG);
@@ -195,7 +195,7 @@ public :
         return HEAD_LENGTH;
     }
     static int encode_addcam_request(char *buf,int len){
-     //   pkg_set_len(ba);
+        //   pkg_set_len(ba);
         memset(buf,0,Tools::BUF_LENGTH);
         pkg_set_len(buf,len);
         pkg_set_version(buf,VERSION);
@@ -204,7 +204,7 @@ public :
         return HEAD_LENGTH+len;
     }
     static int encode_delcam_request(char *buf,int index){
-     //   pkg_set_len(ba);
+        //   pkg_set_len(ba);
         memset(buf,0,Tools::BUF_LENGTH);
         pkg_set_len(buf,0);
         pkg_set_version(buf,VERSION);
@@ -359,10 +359,10 @@ class AbstructThread{
 public:
 
     AbstructThread(thread *th):t(th){
-thread_started=1;
-          cout<<thread_started<<endl;
+        thread_started=1;
+        cout<<thread_started<<endl;
 
-            //sss=11;
+        //sss=11;
     }
     //virtual void fun()=0;
     ~AbstructThread()
@@ -377,7 +377,7 @@ thread_started=1;
 
     void start_thread()
     {
-         cout<<"thread_started"<<endl;
+        cout<<"thread_started"<<endl;
         thread_started=1;
     }
     void stop_thread()
@@ -387,13 +387,13 @@ thread_started=1;
     }
     void ter()
     {
-              t->join();
+        t->join();
 
     }
 private:
     // thread t(std::mem_fn(&PrintNum1::fun),*(PrintNum1 *)obj);
     thread *t;
-     int thread_started;
+    int thread_started;
 
     //void *obj;
     //   / int num;
@@ -402,24 +402,24 @@ private:
 class Thread1{
 public:
     Thread1(){
-         // th=new AbstructThread(  thread(std::mem_fn(&Thread1::fun),*(Thread1*)obj));
+        // th=new AbstructThread(  thread(std::mem_fn(&Thread1::fun),*(Thread1*)obj));
         ttt=10;
 
-       // p_thread=new thread(std::mem_fn(&Thread1::fun),*(Thread1*)obj);
+        // p_thread=new thread(std::mem_fn(&Thread1::fun),*(Thread1*)obj);
         p_thread_fun1=THREAD_DEF(Thread1,fun1);
         p_thread_fun1->detach();
         p_thread_fun2=THREAD_DEF(Thread1,fun2);
         p_thread_fun2->detach();
-     }
+    }
     void fun1()
     {
         while(1){
             if(1)
             {
                 this_thread::sleep_for(std::chrono::milliseconds(10)); //休眠三秒
-                 cout<<__FUNCTION__<<endl;
+                cout<<__FUNCTION__<<endl;
 
-              }
+            }
             else{
                 this_thread::sleep_for(std::chrono::seconds(1)); //休眠三秒
             }
@@ -433,7 +433,7 @@ public:
                 this_thread::sleep_for(std::chrono::milliseconds(10)); //休眠三秒
                 cout<<__FUNCTION__<<endl;
 
-              }
+            }
             else{
                 this_thread::sleep_for(std::chrono::seconds(1)); //休眠三秒
             }
@@ -441,7 +441,7 @@ public:
     }
     thread *p_thread_fun1;
     thread *p_thread_fun2;
-   //    AbstructThread *th;
+    //    AbstructThread *th;
     int ttt;
 };
 
@@ -531,11 +531,382 @@ private:
 };
 
 
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QTextStream>
+class FileDataBase{
+    QByteArray data;
+    QString config_filename;
+public:
+    FileDataBase(QString name):config_filename(name)
+    {
+       load_config_from_file(config_filename);
+    }
+    ~FileDataBase()
+    {
+
+    }
+    QByteArray get()
+    {
+        return data;
+    }
+    void set(QByteArray d)
+    {
+        data=d;
+        save_config_to_file();
+    }
+
+
+private:
+    int load_config_from_file()
+    {
+
+        QFile *f=new QFile(config_filename);
+        bool ret = f->open(QIODevice::ReadOnly);
+        if(!ret){
+            delete f;
+            return 0;
+        }
+        data=f->readAll();
+        f->close();
+        return 1;
+    }
+    int load_config_from_file(QString file_name)
+    {
+
+        QFile *f=new QFile(file_name);
+        bool ret = f->open(QIODevice::ReadOnly);
+        if(!ret){
+            delete f;
+            return 0;
+        }
+        data=f->readAll();
+        f->close();
+        return 1;
+    }
+    void save_config_to_file()
+    {
+        QFile *f=new QFile(config_filename);
+        bool ret = f->open(QIODevice::ReadWrite|QIODevice::Truncate);
+        if(!ret){
+            prt(info,"fail to open %s",config_filename.toStdString().data());
+            delete f;
+        }
+        f->write(data);
+        f->close();
+    }
+    void save_config_to_file(QString file_name)
+    {
+        QFile *f=new QFile(file_name);
+        bool ret = f->open(QIODevice::ReadWrite|QIODevice::Truncate);
+        if(!ret){
+            prt(info,"fail to open %s",file_name.toStdString().data());
+            delete f;
+        }
+        f->write(data);
+        f->close();
+    }
+};
+class CameraConfiguration{
+    /*
+        config save in cfg(config_t),which is load from p_database(FileDatabase).
+    */
+    FileDataBase *p_database;
+    typedef struct camera_config{
+        QString ip;
+        int port;
+    }camera_config_t;
+    typedef struct config{
+        int camera_amount;
+        QList<camera_config_t> camera;
+    }config_t;
+    config_t cfg;
+public:
+    CameraConfiguration(QString name)
+    {
+        p_database=new FileDataBase(name);
+        QByteArray b=p_database->get();
+        cfg=decode_from_json(b);
+    }
+    ~CameraConfiguration()
+    {
+        delete p_database;
+    }
+    void save()
+    {
+        p_database->set(encode_to_json(cfg));
+    }
+    void add_camera()
+    {
+
+    }
+    void append_camera(QString url,int port)
+    {
+
+    }
+
+    void del_camera()
+    {
+
+    }
+    void mod_camera()
+    {
+
+    }
+
+private:
+    /*
+        parse structure from data
+    */
+    config_t decode_from_json(QByteArray &json_src)
+    {
+        QJsonDocument json_doc=QJsonDocument::fromJson(json_src);
+        QJsonObject root_obj=json_doc.object();
+        config_t data;
+        data.camera.clear();
+        data.camera_amount=get_int(root_obj,"camera_total_number");
+        QJsonArray cams=get_child_array(root_obj,"camera");
+
+        foreach (QJsonValue v, cams) {
+            QJsonObject obj=v.toObject();
+            camera_config_t t;
+            t.ip=get_string(obj,"ip");
+            t.port=get_int(obj,"port");
+            data.camera.append(t);
+        }
+        return data;
+    }
+    /*
+        pack data from structure
+    */
+    QByteArray encode_to_json(config_t data)
+    {
+        QJsonDocument json_doc_new;
+        QJsonObject root_obj;
+
+        root_obj["camera_total_number"]=data.camera_amount;
+        QJsonArray cams;
+
+        for(int i=0;i<data.camera_amount;i++)
+        {
+            QJsonObject o;
+            o["ip"]=data.camera[i].ip;
+            o["port"]=data.camera[i].port;
+            cams.append(o);
+        }
+        root_obj["camera"]=cams;
+        json_doc_new.setObject(root_obj);
+        return json_doc_new.toJson();
+
+    }
+
+    inline int get_int(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toInt();
+    }
+    inline QString get_string(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toString();
+    }
+    inline bool get_bool(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toBool();
+    }
+    inline QJsonObject get_child_obj(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toObject();
+    }
+    inline QJsonArray get_child_array(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toArray();
+    }
+};
+
+class Config
+{
+    typedef struct camera_data{
+        QString ip;
+        int port;
+    }camera_data_t;
+    typedef struct data{
+        int camera_amount;
+        QList<camera_data_t> camera;
+    }data_t;
+public:
+
+    Config(char *name)
+    {
+        config_filename.clear();
+        config_filename.append(name);
+        load_config_from_file();
+    }
+    ~Config()
+    {
+
+    }
+
+
+
+
+    //    void set_ba(QByteArray ba){
+    //        decode_from_json(ba);
+    //        save_config_to_file();
+    //    }
+    //    QByteArray get_ba(){
+    //        return encode_to_json();
+    //    }
+    //    void save(){
+    //        save_config_to_file();
+    //    }
+    //    void append_camera(QString url,int port)
+    //    {
+    //        camera_data_t cam;
+    //        cam.ip=url;
+    //        cam.port=port;
+    //        data.camera.append(cam);
+    //        data.camera_amount++;
+    //        save();
+    //    }
+    //    void del_camera(int index)
+    //    {
+    //        data.camera.removeAt(index-1);
+    //        data.camera_amount--;
+    //        save();
+    //    }
+
+
+
+
+    int load_config_from_file()
+    {
+
+        QFile *f=new QFile(config_filename);
+        bool ret = f->open(QIODevice::ReadOnly);
+        if(!ret){
+            delete f;
+            return 0;
+        }
+        QByteArray json_data;
+        json_data=f->readAll();
+        decode_from_json(json_data);
+        f->close();
+        return 1;
+    }
+    int load_config_from_file(QString file_name)
+    {
+
+        QFile *f=new QFile(file_name);
+        bool ret = f->open(QIODevice::ReadOnly);
+        if(!ret){
+            delete f;
+            return 0;
+        }
+        QByteArray json_data;
+        json_data=f->readAll();
+        decode_from_json(json_data);
+        f->close();
+        return 1;
+    }
+    void save_config_to_file()
+    {
+        QFile *f=new QFile(config_filename);
+        bool ret = f->open(QIODevice::ReadWrite|QIODevice::Truncate);
+        if(!ret){
+            prt(info,"fail to open %s",config_filename.toStdString().data());
+            delete f;
+        }
+        f->write(encode_to_json());
+        f->close();
+    }
+    void save_config_to_file(QString file_name)
+    {
+        QFile *f=new QFile(file_name);
+        bool ret = f->open(QIODevice::ReadWrite|QIODevice::Truncate);
+        if(!ret){
+            prt(info,"fail to open %s",file_name.toStdString().data());
+            delete f;
+        }
+        f->write(encode_to_json());
+        f->close();
+    }
+
+
+private:
+    /*
+        parse structure from data
+    */
+    void decode_from_json(QByteArray &json_src)
+    {
+        QJsonDocument json_doc=QJsonDocument::fromJson(json_src);
+        QJsonObject root_obj=json_doc.object();
+
+        data.camera.clear();
+        data.camera_amount=get_int(root_obj,"camera_total_number");
+        QJsonArray cams=get_child_array(root_obj,"camera");
+
+        foreach (QJsonValue v, cams) {
+            QJsonObject obj=v.toObject();
+            camera_data_t t;
+            t.ip=get_string(obj,"ip");
+            t.port=get_int(obj,"port");
+            data.camera.append(t);
+        }
+    }
+    QByteArray encode_to_json()
+    {
+        QJsonDocument json_doc_new;
+        QJsonObject root_obj;
+
+        root_obj["camera_total_number"]=data.camera_amount;
+        QJsonArray cams;
+
+        for(int i=0;i<data.camera_amount;i++)
+        {
+            QJsonObject o;
+            o["ip"]=data.camera[i].ip;
+            o["port"]=data.camera[i].port;
+            cams.append(o);
+        }
+        root_obj["camera"]=cams;
+        json_doc_new.setObject(root_obj);
+        return json_doc_new.toJson();
+
+    }
+
+    inline int get_int(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toInt();
+    }
+    inline QString get_string(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toString();
+    }
+    inline bool get_bool(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toBool();
+    }
+    inline QJsonObject get_child_obj(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toObject();
+    }
+    inline QJsonArray get_child_array(QJsonObject obj,const char *member_name)
+    {
+        return obj[member_name].toArray();
+    }
+    QString config_filename;
+    data_t data;
+};
 class Test
 {
 public:
     ServerInfoReporter r;
-    Test() {}
+    Test() {
+        Config cfg("/root/repo-github/pedestrian-v12/server/config.json");
+        cfg.save_config_to_file(QString("/root/repo-github/pedestrian-v12/server/config.json-test"));
+
+    }
     void fun111()
     {
         //    abcd::test_fun();
@@ -568,18 +939,18 @@ public:
         //         cout<<"ok1"<<endl;
         //         p.stop_thread();
 
-    //    Thread1 t1;
+        //    Thread1 t1;
 
-     //   t1.start_thread();
-     //   t1.stop_thread();
-   //  this_thread::sleep_for(std::chrono::seconds(3)); //休眠三秒
-  //   cout<<"done"<<endl;
-  //   t1.stop_thread();
+        //   t1.start_thread();
+        //   t1.stop_thread();
+        //  this_thread::sleep_for(std::chrono::seconds(3)); //休眠三秒
+        //   cout<<"done"<<endl;
+        //   t1.stop_thread();
 
 
-//    while(1)
-//        ;
-     //     ThreadTool1 t1;
+        //    while(1)
+        //        ;
+        //     ThreadTool1 t1;
         //       t1.start_thread();
         //    cout<<"ok2"<<endl;
         // t1.stop_thread();
