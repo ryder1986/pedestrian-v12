@@ -30,6 +30,7 @@ private:
     static  char filename[FIXED_VALUE::PATH_LENGTH];
     const int static buf_size=200;
 
+
 public:
 
     Tools()
@@ -75,6 +76,7 @@ public:
 
 class Protocol{
 public :
+    const int static camera_max_num=8;
     enum VER{
         VERSION=1
     };
@@ -542,7 +544,7 @@ class FileDataBase{
 public:
     FileDataBase(QString name):config_filename(name)
     {
-       load_config_from_file(config_filename);
+        load_config_from_file(config_filename);
     }
     ~FileDataBase()
     {
@@ -634,22 +636,27 @@ public:
     {
         delete p_database;
     }
-    void save()
+    int add_camera(int index,QString url,int port)
     {
-        p_database->set(encode_to_json(cfg));
+        if(index<0||index > Protocol::camera_max_num)
+            return -1;
+        camera_config_t cam;
+        cam.ip=url;
+        cam.port=port;
+        cfg.camera.insert(index,cam);
+        cfg.camera_amount++;
+        save();
+        return 0;
     }
-    void add_camera()
+
+    int del_camera(int index)
     {
-
-    }
-    void append_camera(QString url,int port)
-    {
-
-    }
-
-    void del_camera()
-    {
-
+        if(index<0||index > Protocol::camera_max_num)
+            return -1;
+        cfg.camera.removeAt(index-1);
+        cfg.camera_amount--;
+        save();
+        return 0;
     }
     void mod_camera()
     {
@@ -657,6 +664,10 @@ public:
     }
 
 private:
+    void save()
+    {
+        p_database->set(encode_to_json(cfg));
+    }
     /*
         parse structure from data
     */

@@ -38,34 +38,34 @@ using namespace std;
 class Myclass1
 {
 private:
-        int a,b,c;
+    int a,b,c;
 
 public:
-            static int Sum;    //声明静态数据成员
-        Myclass1(){};
+    static int Sum;    //声明静态数据成员
+    Myclass1(){};
 };
 class Myclass
 {
 private:
-        int a,b,c;
+    int a,b,c;
 
 public:
-           static int Sum;    //声明静态数据成员
-        Myclass(int a,int b,int c);
-        void GetSum();
+    static int Sum;    //声明静态数据成员
+    Myclass(int a,int b,int c);
+    void GetSum();
 };
 int Myclass::Sum=0;       //定义并初始化静态数据成员
 int Myclass1::Sum=0;       //定义并初始化静态数据成员
 Myclass::Myclass(int a,int b,int c)
 {
-        this->a=a;
-        this->b=b;
-        this->c=c;
-        Sum+=a+b+c;
+    this->a=a;
+    this->b=b;
+    this->c=c;
+    Sum+=a+b+c;
 }
 void Myclass::GetSum()
 {
-        cout <<"Sum=" <<Sum <<endl;
+    cout <<"Sum=" <<Sum <<endl;
 }
 mutex Tools::lock;
 //int main(void)
@@ -94,7 +94,7 @@ int test()
 }
 void test1(  int &t)
 {
-        cout<<t<<endl;
+    cout<<t<<endl;
 }
 class A
 {
@@ -117,33 +117,33 @@ void ttss(const A &tmp)
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-//    const int aaa=test();
+    //    const int aaa=test();
 
-  //    const  int abc=1;
-//      // test1(abc);
-       //   int &sss=abc;
+    //    const  int abc=1;
+    //      // test1(abc);
+    //   int &sss=abc;
 
-//    const A pA;
-//     A &&testA=ssss();
-//     testA.fun();
- //  testA.fun();
+    //    const A pA;
+    //     A &&testA=ssss();
+    //     testA.fun();
+    //  testA.fun();
 
 
-//     A &testA=pA;
+    //     A &testA=pA;
     // A temp= ssss();
-   //ttss(ssss());
-   //const  int &pp=123;
+    //ttss(ssss());
+    //const  int &pp=123;
     //   A ttt();
-//       const A ssss;
-//        ssss.fun();
-//ttss(ssss());
-       //ttt.fun();
+    //       const A ssss;
+    //        ssss.fun();
+    //ttss(ssss());
+    //ttt.fun();
 
-  //  int &bbb=abc;
+    //  int &bbb=abc;
     Test t;
-  t.fun111();
+    t.fun111();
 
-//    Server *p_server=new Server();
-//    p_server->print_server_info();
+    //    Server *p_server=new Server();
+    //    p_server->print_server_info();
     return a.exec();
 }
