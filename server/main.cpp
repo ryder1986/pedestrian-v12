@@ -98,7 +98,13 @@ void test1(  int &t)
 }
 class A
 {
+
 public:
+    A()
+    {
+        QTimer *t=new QTimer;
+          thread *p=THREAD_DEF(A,fun);
+    }
     void fun(){
 
         cout<<"fun"<<endl;
@@ -117,6 +123,7 @@ void ttss(const A &tmp)
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+
     //    const int aaa=test();
 
     //    const  int abc=1;
@@ -140,7 +147,7 @@ int main(int argc, char *argv[])
     //ttt.fun();
 
     //  int &bbb=abc;
-    Test t;
+    Test t(1);
     t.fun111();
 
     //    Server *p_server=new Server();

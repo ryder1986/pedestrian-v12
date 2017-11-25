@@ -909,17 +909,118 @@ private:
     QString config_filename;
     data_t data;
 };
-class Test
-{
+class Camera{
 public:
-    ServerInfoReporter r;
-    Test() {
-        Config cfg("/root/repo-github/pedestrian-v12/server/config.json");
-        cfg.save_config_to_file(QString("/root/repo-github/pedestrian-v12/server/config.json-test"));
+    Camera()
+    {
+        video_src_thread=THREAD_DEF(Camera,get_frame);
+        video_src_thread->detach();
+        video_sink_thread=THREAD_DEF(Camera,process_frame);
+        video_sink_thread->detach();
+    }
+
+private:
+    void get_frame()
+    {
+        while(1){
+            prt(info,"getting frame");
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+    }
+    void process_frame()
+    {
+        while(1){
+            prt(info,"processing frame");
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+    }
+
+    thread *video_src_thread;
+    thread *video_sink_thread;
+};
+
+class CameraManager{
+public:
+    CameraManager()
+    {
 
     }
+    ~CameraManager()
+    {
+
+    }
+    void add_camera()
+    {
+
+    }
+    void del_camera()
+    {
+
+    }
+private:
+
+
+};
+class NetServer{
+public:
+    NetServer()
+    {
+        cmd_list_lock=new mutex;
+    }
+    ~NetServer()
+    {
+
+    }
+    void get_cmd()
+    {
+        //        cmd_list_lock.lock();
+
+        //        cmd_list_lock.unlock();
+    }
+private:
+    void set_cmd()
+    {
+        //        cmd_list_lock.lock();
+        //        cmd_list_lock.unlock();
+    }
+
+
+    //    QList <string> cmd_list;
+    mutex *cmd_list_lock;
+    mutex ccmd_list_lock;
+ };
+int test();
+class Test
+{
+
+    std::thread *fetch_cmd_thread;
+ //
+public:
+    //
+
+//   explicit
+    Test(int a) {
+        ServerInfoReporter *r=new    ServerInfoReporter ;
+        Config cfg("/root/repo-github/pedestrian-v12/server/config.json");
+        cfg.save_config_to_file(QString("/root/repo-github/pedestrian-v12/server/config.json-test"));
+        //    CameraManager c;
+        //  c.start();
+        //  Camera c;
+        //  fetch_cmd_thread=THREAD_DEF(Test,fetch_cmd);
+        //  fetch_cmd_thread->detach();
+       fetch_cmd_thread=new std::thread(std::mem_fn(&Test::fetch_cmd),*this);
+      //   fetch_cmd_thread=new std::thread(test);
+      }
+    ~Test()
+    {
+        //   delete fetch_cmd_thread;
+    }
+
     void fun111()
     {
+
+
+
         //    abcd::test_fun();
         //Tools::aaaa=4;
         //        cout<<Tools::BCD<<endl;
@@ -970,6 +1071,17 @@ public:
         //  this_thread::sleep_for(std::chrono::seconds(3)); //休眠三秒
         //   prt(info,"the name is %d %s",11,"FDASFASDF" );
     }
+private:
+    void fetch_cmd()
+    {
+        while(1)
+        {
+            prt(info,"fecthing cmd");
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+    }
+    NetServer server;
+
 };
 
 
