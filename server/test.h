@@ -12,7 +12,7 @@
 #include <QtCore>
 #include <QUdpSocket>
 #include <QNetworkInterface>
-
+#include <list>
 using namespace std;
 
 class Tools
@@ -46,7 +46,7 @@ public:
             ;
         buffer[i]='\0';
 
-        cout<<'['<<label<<']'<<'['<<buf<<']'<<'['<<file_name<<']'<<'['<<line_no<<']'<<'['<<func_name<<']'<<'['<<buffer<<']'<<endl;
+        cout<<"("<<buf<<")"<<'['<<line_no<<']'<<'['<<func_name<<']'<<'['<<file_name<<']'<<'['<<buffer<<']'<<'['<<label<<']'<<endl;
 
     }
     inline static char* get_time()
@@ -484,6 +484,7 @@ public:
     }
     ~ServerInfoReporter()
     {
+        disconnect(timer);
         delete timer;
         delete udp_skt;
     }
@@ -554,7 +555,7 @@ public:
     {
         return data;
     }
-    void set(QByteArray d)
+    void set(const QByteArray &d)
     {
         data=d;
         save_config_to_file();
@@ -629,41 +630,65 @@ public:
     CameraConfiguration(QString name)
     {
         p_database=new FileDataBase(name);
-        QByteArray b=p_database->get();
-        cfg=decode_from_json(b);
+        reload_cfg();
+        //        QByteArray b=p_database->get();
+        //        cfg=decode_from_json(b);
     }
     ~CameraConfiguration()
     {
         delete p_database;
     }
-    int add_camera(int index,QString url,int port)
-    {
-        if(index<0||index > Protocol::camera_max_num)
-            return -1;
-        camera_config_t cam;
-        cam.ip=url;
-        cam.port=port;
-        cfg.camera.insert(index,cam);
-        cfg.camera_amount++;
-        save();
-        return 0;
-    }
+    //    int add_camera(int index,QString url,int port)
+    //    {
+    //        if(index<0||index > Protocol::camera_max_num)
+    //            return -1;
+    //        camera_config_t cam;
+    //        cam.ip=url;
+    //        cam.port=port;
+    //        cfg.camera.insert(index,cam);
+    //        cfg.camera_amount++;
+    //        save();
+    //        return 0;
+    //    }
 
-    int del_camera(int index)
+    //    int del_camera(int index)
+    //    {
+    //        if(index<0||index > Protocol::camera_max_num)
+    //            return -1;
+    //        cfg.camera.removeAt(index-1);
+    //        cfg.camera_amount--;
+    //        save();
+    //        return 0;
+    //    }
+    //    void mod_camera()
+    //    {
+
+    //    }
+    void set_config(QByteArray &ba)
     {
-        if(index<0||index > Protocol::camera_max_num)
-            return -1;
-        cfg.camera.removeAt(index-1);
-        cfg.camera_amount--;
-        save();
-        return 0;
+        p_database->set(ba);
+        reload_cfg();
     }
-    void mod_camera()
+    camera_config_t get_config(int index)
     {
+        if(index>0&&index<=cfg.camera_amount)
+          return cfg.camera[index-1];
 
     }
-
+    camera_config_t get_tail_camera_config()
+    {
+        if(0<cfg.camera_amount)
+          return cfg.camera[cfg.camera_amount-1];
+        else
+            return NULL;
+    }
 private:
+    void reload_cfg()
+    {
+        QByteArray b=p_database->get();
+        cfg=decode_from_json(b);
+    }
+
     void save()
     {
         p_database->set(encode_to_json(cfg));
@@ -911,7 +936,7 @@ private:
 };
 class Camera{
 public:
-    Camera()
+    Camera( CameraConfiguration::camera_config_t config):cfg(config)
     {
         video_src_thread=THREAD_DEF(Camera,get_frame);
         video_src_thread->detach();
@@ -936,33 +961,46 @@ private:
     }
 
     thread *video_src_thread;
-    thread *video_sink_thread;
+     CameraConfiguration::camera_config_t cfg;
 };
 
 class CameraManager{
+
 public:
     CameraManager()
     {
-
+        p_cfg=new CameraConfiguration("/root/repo-github/pedestrian-v12/server/config.json");
     }
     ~CameraManager()
     {
-
+        delete p_cfg;
     }
-    void add_camera()
-    {
 
+
+    void add_camera(char *cfg_buf)
+    {
+        QByteArray ba;
+        ba.clear();
+        ba.append(cfg_buf);
+        p_cfg->set_config(ba);
+        Camera *c=new Camera(p_cfg->get_tail_camera_config());
+        cameras.push_back(c);;
     }
     void del_camera()
     {
 
     }
 private:
-
+    CameraConfiguration *p_cfg;
+    list<Camera *> cameras;
 
 };
 class NetServer{
 public:
+    NetServer(const NetServer&)
+    {
+
+    }
     NetServer()
     {
         cmd_list_lock=new mutex;
@@ -988,34 +1026,70 @@ private:
     //    QList <string> cmd_list;
     mutex *cmd_list_lock;
     mutex ccmd_list_lock;
- };
+};
 int test();
+class abc123{
+public:
+    abc123(const abc123 &){
+
+    }
+
+    mutex ccmd_list_lock;
+    abc123()
+    {
+
+    }
+
+};
+
 class Test
 {
-
-    std::thread *fetch_cmd_thread;
- //
+    NetServer server;
+    CameraManager *p_cam_manager;
+    //   std::thread *fetch_cmd_thread;
+    //  abc123 aaa;
+    //
 public:
     //
+    //    Test(const Test&){//this is need by std:move sometimes(ex:keep every  member in class  can be move )
 
-//   explicit
-    Test(int a) {
+    //    }
+
+    //   explicit
+    Test() {
+
         ServerInfoReporter *r=new    ServerInfoReporter ;
-        Config cfg("/root/repo-github/pedestrian-v12/server/config.json");
-        cfg.save_config_to_file(QString("/root/repo-github/pedestrian-v12/server/config.json-test"));
-        //    CameraManager c;
+        //        Config cfg("/root/repo-github/pedestrian-v12/server/config.json");
+        //        cfg.save_config_to_file(QString("/root/repo-github/pedestrian-v12/server/config.json-test"));
+        p_cam_manager=new CameraManager();
         //  c.start();
         //  Camera c;
-        //  fetch_cmd_thread=THREAD_DEF(Test,fetch_cmd);
-        //  fetch_cmd_thread->detach();
-       fetch_cmd_thread=new std::thread(std::mem_fn(&Test::fetch_cmd),*this);
-      //   fetch_cmd_thread=new std::thread(test);
-      }
+        //        fetch_cmd_thread=THREAD_DEF(Test,fetch_cmd);
+
+        //        fetch_cmd_thread->detach();
+        // fetch_cmd_thread=new std::thread(std::mem_fn(&Test::fetch_cmd),*this);
+        //   fetch_cmd_thread=new std::thread(test);
+    }
     ~Test()
     {
         //   delete fetch_cmd_thread;
+        delete p_cam_manager;
     }
+    void process_net_cmd()
+    {
+        int cmd;
+        char *config_buf;
+        switch(cmd){
+        case Protocol::ADD_CAMERA:
+            p_cam_manager->add_camera(config_buf);
+            break;
+        case Protocol::DEL_CAMERA:
+            p_cam_manager->del_camera();
+            break;
+        default:break;
+        }
 
+    }
     void fun111()
     {
 
@@ -1080,7 +1154,7 @@ private:
             this_thread::sleep_for(chrono::seconds(1));
         }
     }
-    NetServer server;
+
 
 };
 
