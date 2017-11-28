@@ -17,7 +17,7 @@
 //int main()
 //{
 //    abcd aa;
-//    aa.test_fun();
+//    aa.test_fun();kj
 //    ttt=2;
 //  //  abcd::aaa=3;
 ////     abc a;
@@ -98,7 +98,13 @@ void test1(  int &t)
 }
 class A
 {
+
 public:
+    A()
+    {
+        QTimer *t=new QTimer;
+        thread *p=THREAD_DEF(A,fun);
+    }
     void fun(){
 
         cout<<"fun"<<endl;
@@ -113,37 +119,32 @@ void ttss(const A &tmp)
 {
 
 }
+class Test1{
+    mutex ccmd_list_lock;
+public:
+    //       Test1(Test1 &&)
+    //       {}
+    Test1(const Test1 &){}//std:move use copy-constructor
+    Test1()=default;//constructor can be: default/delete/self-defined
+    Test1(int t){}
+
+    void test_fun()
+    {
+        std::thread  *fetch_cmd_thread=new std::thread(std::mem_fn(&Test1::fun),*this);
+        fetch_cmd_thread->join();
+    }
+
+    void fun(){
+        cout<<"fun"<<endl;
+    }
+};
 
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    //    const int aaa=test();
-
-    //    const  int abc=1;
-    //      // test1(abc);
-    //   int &sss=abc;
-
-    //    const A pA;
-    //     A &&testA=ssss();
-    //     testA.fun();
-    //  testA.fun();
-
-
-    //     A &testA=pA;
-    // A temp= ssss();
-    //ttss(ssss());
-    //const  int &pp=123;
-    //   A ttt();
-    //       const A ssss;
-    //        ssss.fun();
-    //ttss(ssss());
-    //ttt.fun();
-
-    //  int &bbb=abc;
+    //        Test1 t1;
+    //        t1.test_fun();
     Test t;
     t.fun111();
-
-    //    Server *p_server=new Server();
-    //    p_server->print_server_info();
     return a.exec();
 }

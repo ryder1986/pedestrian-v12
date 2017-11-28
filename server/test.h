@@ -12,7 +12,7 @@
 #include <QtCore>
 #include <QUdpSocket>
 #include <QNetworkInterface>
-
+#include <list>
 using namespace std;
 
 class Tools
@@ -46,7 +46,7 @@ public:
             ;
         buffer[i]='\0';
 
-        cout<<'['<<label<<']'<<'['<<buf<<']'<<'['<<file_name<<']'<<'['<<line_no<<']'<<'['<<func_name<<']'<<'['<<buffer<<']'<<endl;
+        cout<<"("<<buf<<")"<<'['<<line_no<<']'<<'['<<func_name<<']'<<'['<<file_name<<']'<<'['<<buffer<<']'<<'['<<label<<']'<<endl;
 
     }
     inline static char* get_time()
@@ -484,6 +484,7 @@ public:
     }
     ~ServerInfoReporter()
     {
+        disconnect(timer);
         delete timer;
         delete udp_skt;
     }
@@ -502,7 +503,7 @@ public  slots:
                 send_buffer_to_client();
             //   udp_skt->flush();
         }else{
-            prt(debug,"searching client on port %d",Protocol::SERVER_REPORTER_PORT)
+            //prt(debug,"searching client on port %d",Protocol::SERVER_REPORTER_PORT)
         }
     }
 
@@ -554,7 +555,7 @@ public:
     {
         return data;
     }
-    void set(QByteArray d)
+    void set(const QByteArray &d)
     {
         data=d;
         save_config_to_file();
@@ -612,6 +613,7 @@ private:
     }
 };
 class CameraConfiguration{
+public:
     /*
         config save in cfg(config_t),which is load from p_database(FileDatabase).
     */
@@ -625,45 +627,78 @@ class CameraConfiguration{
         QList<camera_config_t> camera;
     }config_t;
     config_t cfg;
-public:
+
     CameraConfiguration(QString name)
     {
         p_database=new FileDataBase(name);
-        QByteArray b=p_database->get();
-        cfg=decode_from_json(b);
+        reload_cfg();
+        //        QByteArray b=p_database->get();
+        //        cfg=decode_from_json(b);
     }
     ~CameraConfiguration()
     {
         delete p_database;
     }
-    int add_camera(int index,QString url,int port)
+    //    int add_camera(int index,QString url,int port)
+    //    {
+    //        if(index<0||index > Protocol::camera_max_num)
+    //            return -1;
+    //        camera_config_t cam;
+    //        cam.ip=url;
+    //        cam.port=port;
+    //        cfg.camera.insert(index,cam);
+    //        cfg.camera_amount++;
+    //        save();
+    //        return 0;
+    //    }
+
+    //    int del_camera(int index)
+    //    {
+    //        if(index<0||index > Protocol::camera_max_num)
+    //            return -1;
+    //        cfg.camera.removeAt(index-1);
+    //        cfg.camera_amount--;
+    //        save();
+    //        return 0;
+    //    }
+    //    void mod_camera()
+    //    {
+
+    //    }
+    void set_config(QByteArray &ba)
     {
-        if(index<0||index > Protocol::camera_max_num)
-            return -1;
-        camera_config_t cam;
-        cam.ip=url;
-        cam.port=port;
-        cfg.camera.insert(index,cam);
-        cfg.camera_amount++;
-        save();
-        return 0;
+        p_database->set(ba);
+        reload_cfg();
     }
 
-    int del_camera(int index)
+    void set_config(const char *buf)
     {
-        if(index<0||index > Protocol::camera_max_num)
-            return -1;
-        cfg.camera.removeAt(index-1);
-        cfg.camera_amount--;
-        save();
-        return 0;
+        QByteArray ba;
+        ba.clear();
+        ba.append(buf);
+        p_database->set(ba);
+        reload_cfg();
     }
-    void mod_camera()
-    {
+    //    camera_config_t get_camera_config(int index)
+    //    {
+    //        if(index>0&&index<=cfg.camera_amount)
+    //          return cfg.camera[index-1];
 
-    }
-
+    //    }
+    //    camera_config_t get_camera_config()
+    //    {
+    //        if(0<cfg.camera_amount)
+    //          return cfg.camera[cfg.camera_amount-1];
+    //        else
+    //            return NULL;
+    //    }
 private:
+    void reload_cfg()
+    {
+        QByteArray b=p_database->get();
+        cfg=decode_from_json(b);
+    }
+
     void save()
     {
         p_database->set(encode_to_json(cfg));
@@ -909,17 +944,549 @@ private:
     QString config_filename;
     data_t data;
 };
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/video/video.hpp>
+#include <opencv2/ml/ml.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
+
+#include <QObject>
+using namespace cv;
+using namespace std;
+class  VideoSrc:public QObject{
+    Q_OBJECT
+public:
+    bool video_connected_flag;
+    VideoSrc(QString path)
+    {
+
+        video_connected_flag=true;
+        memset(url,0,Tools::PATH_LENGTH);
+        strcpy(url,path.toStdString().data());
+        p_cap= cvCreateFileCapture(url);  //create video source
+        width=cvGetCaptureProperty(p_cap,CV_CAP_PROP_FRAME_WIDTH);
+        height=cvGetCaptureProperty(p_cap,CV_CAP_PROP_FRAME_HEIGHT);
+        //    prt(info,"video widtbh %d  ",ret);
+        if(p_cap==NULL){
+            prt(info,"video src start  %s err  ",url);
+            video_connected_flag=false;
+        }
+        else {
+            prt(info,"video src  start %s ok  ",url);
+        }
+        //        if(p_cap==NULL)
+        //            emit video_disconnected();
+        //        else
+        //            emit video_connected();
+
+
+
+
+        //    timer=new QTimer();
+        //  tmr->singleShot(1000,this,SLOT(time_up()));
+
+        //    prt(info," shot afer 100 ms")
+        // QTimer::singleShot(1000,this,SLOT(time_up()));
+        //   connect(timer,SIGNAL(timeout()),this,SLOT(time_up()));
+        //   timer->start(wait_duration);
+    }
+    ~VideoSrc()
+    {
+        //   cap_lock.lock();
+        // timer->stop();
+        //  disconnect(timer,SIGNAL(timeout()),this,SLOT(time_up()));
+        //   delete timer;
+        //     QThread::sleep(1);
+        //   prt(info," delete src");
+        //    disconnect(tmr,SIGNAL(timeout()),this,SLOT(time_up()));
+        cvReleaseCapture(&p_cap);
+        p_cap=NULL;
+        //    cap_lock.unlock();
+        //   delete tmr;
+        //   delete p_cap;
+    }
+    Mat *get_frame()
+    {
+
+        //     tmr->singleShot(10,this,SLOT(time_up()));
+        int err=0;
+        if(p_cap==NULL){
+            video_connected_flag=false;
+            err=1;
+            //   emit video_disconnected();
+        }
+        IplImage *ret_img;
+
+        //            prt(info,"try to grb");
+        //        int tmp= cvGrabFrame(p_cap);
+        //             prt(info,"grub source url:%s ret %d (%p)",url,tmp,p_cap);
+        //        ret_img= cvRetrieveFrame(p_cap);
+        //   prt(info,"try to query");
+        //    CV_CAP_PROP_XI_TIMEOUT
+        //CV_CAP_PROP_FRAME_WIDTH
+        //    int ret=cvSetCaptureProperty(p_cap,CV_CAP_PROP_XI_TIMEOUT,999);
+        // double pro=cvGetCaptureProperty(p_cap,CV_CAP_PROP_XI_TIMEOUT);
+        //  prt(info," set %d ,opecv time out %d",ret ,pro);
+        //      CV_CAP_PROP_XI_TIMEOUT
+        //prt(info,"  start query 1 frame ");
+        ret_img=cvQueryFrame(p_cap);
+        Mat(ret_img).copyTo(mat_rst);
+        if(ret_img==NULL){
+            err=1;
+            //     std::this_thread::sleep_for(chrono::milliseconds(1000));
+            //    QThread::sleep(1);
+            if(video_connected_flag==true)
+            {
+                //    prt(info,"%s disconnected",url);
+                video_connected_flag=false;
+            }
+        }else{
+            if(video_connected_flag==false)
+            {
+                //     prt(info,"%s connected",url);
+                video_connected_flag=true;
+            }
+        }
+        if(err)
+            return NULL;
+        else
+            return &mat_rst;
+
+    }
+    char *get_url(){
+        return url;
+    }
+public slots:
+
+signals:
+private:
+    CvCapture *p_cap;
+    char url[Tools::PATH_LENGTH];
+    int width;
+    int height;
+    Mat mat_rst;
+};
+using namespace cv;
+using namespace std;
+
+class VideoHandler{
+
+public:
+    IplImage * frame_ori;
+    VideoHandler()
+    {
+
+    }
+    ~VideoHandler()
+    {
+
+    }
+    void set_frame( Mat * frame)
+    {
+        frame_mat=frame;
+    }
+    void set_null_frame( )
+    {
+        Mat frame;
+        frame.resize(0);
+        frame_mat=&frame;
+    }
+    bool work(QByteArray &rst_ba)
+    {
+        int min_win_width = 64;	// 48, 64, 96, 128, 160, 192, 224
+        int max_win_width = 256;
+        bool ret=false;
+        CascadeClassifier cascade;
+        vector<Rect> objs;
+        //string cascade_name = "../Hog_Adaboost_Pedestrian_Detect\\hogcascade_pedestrians.xml";
+        // string cascade_name = "/root/hogcascade_pedestrians.xml";
+
+        const string cascade_name = "/root/repo-github/pedestrian-v12/server/hogcascade_pedestrians.xml";
+
+        if (!cascade.load(cascade_name))
+        {
+            prt(info,"can't load cascade");
+            // cout << "can't load cascade!" << endl;
+            //return -1;
+        }
+#if 1
+
+        // while (1)
+        {
+            //   frame_ori = cvQueryFrame(p_cap);
+            //   frame.create(frame_ori->height,frame_ori->width,CV_8U);
+            //   memcpy(frame.data,frame_ori->imageData,frame_ori->imageSize);
+            // Mat frame(frame_ori);
+
+
+            // int test=  waitKey(1);
+            //     printf("%d\n",test);
+            Mat frame(*frame_mat);
+            //   imshow("url",frame);
+
+            //    QThread::msleep(1);
+
+            //   return 0;
+            if (!frame.empty())
+            {
+                frame_num++;
+                if (frame_num % 100 == 0)
+                {
+                    cout << "Processed " << frame_num << " frames!" << endl;
+                }
+
+                //   if (frame_num % 3 == 0)
+                if (1)
+                {
+                    resize(frame,frame,Size(frame.cols / 2, frame.rows / 2),CV_INTER_LINEAR);
+                    //resize(frame,frame,Size(704, 576),CV_INTER_LINEAR);
+                    cvtColor(frame, gray_frame, CV_BGR2GRAY);
+                    //  gray_frame=frame;
+                    //Rect rect;
+                    //rect.x = 275;
+                    //rect.y = 325;
+                    //rect.width = 600;
+                    //rect.height = 215;
+
+                    //Mat detect_area = gray_frame(rect);
+                    //cascade.detectMultiScale(detect_area,objs,1.1,3);
+                    cascade.detectMultiScale(gray_frame, objs, 1.1, 3);
+
+
+                    vector<Rect>::iterator it = objs.begin();
+                    while (it != objs.end() && objs.size() != 0)
+                    {
+                        pedestrian_num++;
+                        pedestrians = frame(*it);
+
+                        Rect rct = *it;
+                        if (rct.width >= min_win_width && rct.width < max_win_width)
+                        {
+                            //   sprintf(file_name, "%d.jpg", pedestrian_num);
+                            //  imwrite(file_name, pedestrians);
+
+                            //rct.x += rect.x;
+                            //rct.y += rect.y;
+
+                            int test=12345;
+                            rectangle(frame, rct, Scalar(0, 255, 0), 2);
+
+                            QString x_str=QString::number(rct.x);
+                            QString y_str=QString::number(rct.y);
+                            QString test_str=QString::number(test);
+
+                            rst_ba.append(x_str.toStdString().data());
+                            rst_ba.append(",");
+                            rst_ba.append(y_str.toStdString().data());
+                            //prt(info,"%d %d",rct.x,rct.y);
+
+                            ret=true;
+                            break;//TODO, now we get first one
+                        }
+
+                        //  rst_ba.append(";");
+                        //  rst_ba.append(rct.x);
+                        it++;
+                    }
+#if 0
+                    imshow("result", frame);
+                    QThread::msleep(1);
+
+
+#endif
+                    //                    waitKey(1);
+
+                    //   rectangle(frame,rect,Scalar(0,255,0),2);
+                    // imshow("result", frame);
+                    //outputVideo << frame;
+                    //   waitKey(1);
+                    objs.clear();
+                }
+            }
+            else
+            {
+                prt(info,"opencv handle frame error !");
+            }
+        }
+#endif
+        if(ret==true){
+            //   emit send_rst(rst_ba);
+        }
+        return ret;
+    }
+
+
+private:
+    Mat gray_frame;
+    Mat pedestrians;
+    Mat *frame_mat;
+    QList <Mat> frame_list;
+    int pedestrian_num = 0;
+    int frame_num = 0;
+
+};
+class Camera{
+    typedef CameraConfiguration::camera_config_t camera_config;
+public:
+    Camera( camera_config config):cfg(config),quit_flag(false),quit_flag_src(false),quit_flag_sink(false)
+    {
+        p_lock=new mutex;
+        p_src=new VideoSrc(QString("/root/video/test.264"));
+        p_handler=new VideoHandler();
+        video_src_thread=THREAD_DEF(Camera,get_frame);
+        //    video_src_thread->detach();
+        video_sink_thread=THREAD_DEF(Camera,process_frame);
+        //    video_sink_thread->detach();
+
+    }
+//    Camera(const Camera &c)
+//    {
+
+//       p_src= c.p_src;
+//    }
+    ~Camera()
+    {
+          delete p_lock;
+        //delete p_handler;
+        //     delete p_src;
+        //        delete video_src_thread;
+        //        delete video_sink_thread;
+    }
+
+    void restart(camera_config new_cfg)
+    {
+        quit_flag=true;
+        video_src_thread->join();
+        video_sink_thread->join();
+        cfg=new_cfg;
+        video_src_thread=THREAD_DEF(Camera,get_frame);
+        video_sink_thread=THREAD_DEF(Camera,process_frame);
+    }
+    int try_restart(camera_config new_cfg)//experinmental
+    {
+        quit_flag=true;
+        if(video_src_thread->joinable())
+            video_src_thread->detach();
+        if(video_sink_thread->joinable())
+            video_sink_thread->detach();
+        cfg=new_cfg;
+        this_thread::sleep_for(chrono::seconds(1));
+
+        if(quit_flag==true&&quit_flag_src==true&&quit_flag_sink==true){
+            quit_flag=false;
+            quit_flag_sink=false;
+            quit_flag_src=false;
+            video_src_thread=THREAD_DEF(Camera,get_frame);
+            video_sink_thread=THREAD_DEF(Camera,process_frame);
+            return 0;
+        }else{
+            return 1;
+        }
+    }
+private:
+    void get_frame()
+    {
+        while(!quit_flag){
+            prt(info,"getting frame");
+            p_mt=p_src->get_frame();
+            p_lock->lock();
+            frame_list.push_front(*p_mt);
+            p_lock->unlock();
+            prt(info,"%d",frame_list.size());
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+        quit_flag_src=true;
+    }
+    void process_frame()
+    {
+        QByteArray ba;
+        while(!quit_flag){
+            prt(info,"processing frame");
+            p_lock->lock();
+            if(frame_list.size()>1){
+                p_handler->set_frame(&(*frame_list.end()));
+
+                p_handler->work(ba);
+            }
+            p_lock->unlock();
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+        quit_flag_sink=true;
+    }
+    bool quit_flag;
+    bool quit_flag_src;
+    bool quit_flag_sink;
+    thread *video_src_thread;
+    thread *video_sink_thread;
+    camera_config cfg;
+    VideoSrc *p_src;
+    VideoHandler * p_handler;
+    Mat* p_mt;
+    deque <Mat> frame_list;
+    mutex *p_lock;
+};
+
+class CameraManager{
+
+public:
+    CameraManager()
+    {
+        p_cfg=new CameraConfiguration("/root/repo-github/pedestrian-v12/server/config.json");
+        start_all();
+    }
+    ~CameraManager()
+    {
+        stop_all();
+        delete p_cfg;
+
+    }
+    void start_all()
+    {
+        foreach (CameraConfiguration::camera_config_t tmp, p_cfg->cfg.camera) {
+            Camera *c=new Camera(tmp);
+            cameras.push_back(c);
+        }
+    }
+    void stop_all()
+    {
+        foreach (Camera *tmp, cameras) {
+            delete tmp;
+            cameras.removeOne(tmp);
+        }
+    }
+
+    void add_camera(const char *cfg_buf)
+    {
+        p_cfg->set_config(cfg_buf);
+        Camera *c=new Camera(p_cfg->cfg.camera[p_cfg->cfg.camera_amount-1]);
+        cameras.push_back(c);
+    }
+    void del_camera(const char *cfg_buf,const int index)
+    {
+        p_cfg->set_config(cfg_buf);
+        delete cameras[index-1];
+        cameras.removeAt(index-1);
+    }
+    void mod_camera(const char *cfg_buf,const int index)
+    {
+        p_cfg->set_config(cfg_buf);
+        while(true){
+            if(0==cameras[index-1]->try_restart(p_cfg->cfg.camera[p_cfg->cfg.camera_amount-1]))
+                break;
+            else
+            {
+                prt(info,"restarting camera %d",index);
+            }
+        }
+    }
+
+private:
+    CameraConfiguration *p_cfg;
+    QList<Camera *> cameras;
+
+};
+class NetServer{
+public:
+    NetServer(const NetServer&)
+    {
+
+    }
+    NetServer()
+    {
+        cmd_list_lock=new mutex;
+    }
+    ~NetServer()
+    {
+
+    }
+    void get_cmd()
+    {
+        //        cmd_list_lock.lock();
+
+        //        cmd_list_lock.unlock();
+    }
+private:
+    void set_cmd()
+    {
+        //        cmd_list_lock.lock();
+        //        cmd_list_lock.unlock();
+    }
+
+
+    //    QList <string> cmd_list;
+    mutex *cmd_list_lock;
+    mutex ccmd_list_lock;
+};
+int test();
+class abc123{
+public:
+    abc123(const abc123 &){
+
+    }
+
+    mutex ccmd_list_lock;
+    abc123()
+    {
+
+    }
+
+};
+
 class Test
 {
+    NetServer server;
+    CameraManager *p_cam_manager;
+    //   std::thread *fetch_cmd_thread;
+    //  abc123 aaa;
+    //
 public:
-    ServerInfoReporter r;
+    //
+    //    Test(const Test&){//this is need by std:move sometimes(ex:keep every  member in class  can be move )
+
+    //    }
+
+    //   explicit
     Test() {
-        Config cfg("/root/repo-github/pedestrian-v12/server/config.json");
-        cfg.save_config_to_file(QString("/root/repo-github/pedestrian-v12/server/config.json-test"));
+
+        ServerInfoReporter *r=new    ServerInfoReporter ;
+        //        Config cfg("/root/repo-github/pedestrian-v12/server/config.json");
+        //        cfg.save_config_to_file(QString("/root/repo-github/pedestrian-v12/server/config.json-test"));
+        p_cam_manager=new CameraManager();
+        //  c.start();
+        //  Camera c;
+        //        fetch_cmd_thread=THREAD_DEF(Test,fetch_cmd);
+
+        //        fetch_cmd_thread->detach();
+        // fetch_cmd_thread=new std::thread(std::mem_fn(&Test::fetch_cmd),*this);
+        //   fetch_cmd_thread=new std::thread(test);
+    }
+    ~Test()
+    {
+        //   delete fetch_cmd_thread;
+        delete p_cam_manager;
+    }
+    void process_net_cmd()
+    {
+        int cmd;
+        char *config_buf;
+        switch(cmd){
+        case Protocol::ADD_CAMERA:
+            p_cam_manager->add_camera(config_buf);
+            break;
+        case Protocol::DEL_CAMERA:
+            p_cam_manager->del_camera(config_buf,1);
+            break;
+        default:break;
+        }
 
     }
     void fun111()
     {
+
+
+
         //    abcd::test_fun();
         //Tools::aaaa=4;
         //        cout<<Tools::BCD<<endl;
@@ -970,6 +1537,17 @@ public:
         //  this_thread::sleep_for(std::chrono::seconds(3)); //休眠三秒
         //   prt(info,"the name is %d %s",11,"FDASFASDF" );
     }
+private:
+    void fetch_cmd()
+    {
+        while(1)
+        {
+            prt(info,"fecthing cmd");
+            this_thread::sleep_for(chrono::seconds(1));
+        }
+    }
+
+
 };
 
 
