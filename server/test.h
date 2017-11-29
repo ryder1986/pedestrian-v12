@@ -959,7 +959,7 @@ class  VideoSrc:public QObject{
     Q_OBJECT
 public:
     bool video_connected_flag;
-    VideoSrc(QString path)
+    VideoSrc(QString path):p_cap(NULL)
     {
 
         video_connected_flag=true;
@@ -1230,16 +1230,29 @@ private:
 class Camera{
     typedef CameraConfiguration::camera_config_t camera_config;
 public:
+    int test_flg;
     Camera( camera_config config):cfg(config),quit_flag(false),quit_flag_src(false),quit_flag_sink(false)
     {
         p_lock=new mutex;
         p_src=new VideoSrc(QString("/root/video/test.264"));
         p_handler=new VideoHandler();
-        video_src_thread=THREAD_DEF(Camera,get_frame);
-        //    video_src_thread->detach();
-        video_sink_thread=THREAD_DEF(Camera,process_frame);
-        //    video_sink_thread->detach();
+       video_src_thread=THREAD_DEF(Camera,get_frame);
+            video_src_thread->detach();
+//        video_sink_thread=THREAD_DEF(Camera,process_frame);
+//            video_sink_thread->detach();
 
+             test_flg=1;
+//        Mat *m1;
+//        while(1)
+//        {
+//            p_lock->lock();
+//           m1=p_src->get_frame();
+//           p_handler->set_frame(m1);
+//           this_thread::sleep_for(chrono::seconds(1));
+//           prt(info,"1");
+//           p_lock->unlock();
+//
+//        }
     }
 //    Camera(const Camera &c)
 //    {
@@ -1292,7 +1305,10 @@ private:
             prt(info,"getting frame");
             p_mt=p_src->get_frame();
             p_lock->lock();
-            frame_list.push_front(*p_mt);
+
+         //   frame_list.push_front(*p_mt);
+            test_flg++;
+            prt(info,"++ %d",test_flg);
             p_lock->unlock();
             prt(info,"%d",frame_list.size());
             this_thread::sleep_for(chrono::seconds(1));
@@ -1305,11 +1321,14 @@ private:
         while(!quit_flag){
             prt(info,"processing frame");
             p_lock->lock();
-            if(frame_list.size()>1){
-                p_handler->set_frame(&(*frame_list.end()));
+            test_flg--;
 
-                p_handler->work(ba);
-            }
+            prt(info,"-- %d",test_flg);
+//            if(frame_list.size()>1){
+//                p_handler->set_frame(&(*frame_list.end()));
+
+//                p_handler->work(ba);
+//            }
             p_lock->unlock();
             this_thread::sleep_for(chrono::seconds(1));
         }
