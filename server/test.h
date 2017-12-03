@@ -1093,8 +1093,10 @@ public:
         frame.resize(0);
         frame_mat=&frame;
     }
-    bool work(QByteArray &rst_ba)
+    //  bool work(QByteArray &rst_ba)
+    bool work()
     {
+        QByteArray rst_ba;
         int min_win_width = 64;	// 48, 64, 96, 128, 160, 192, 224
         int max_win_width = 256;
         bool ret=false;
@@ -1124,8 +1126,8 @@ public:
             // int test=  waitKey(1);
             //     printf("%d\n",test);
             Mat frame(*frame_mat);
-            //   imshow("url",frame);
-
+              imshow("url",frame);
+  // waitKey(1);
             //    QThread::msleep(1);
 
             //   return 0;
@@ -1231,37 +1233,78 @@ class Camera{
     typedef CameraConfiguration::camera_config_t camera_config;
 public:
     int test_flg;
-    Camera( camera_config config):cfg(config),quit_flag(false),quit_flag_src(false),quit_flag_sink(false)
+    typedef struct data{
+        bool quit_flag;
+        bool quit_flag_src;
+        bool quit_flag_sink;
+        thread *video_src_thread;
+        thread *video_sink_thread;
+        camera_config cfg;
+        VideoSrc *p_src;
+        VideoHandler * p_handler;
+        Mat* p_mt;
+        deque <Mat> frame_list;
+        mutex *p_lock;
+        int testflg;
+    }data_t;
+    data_t d;
+    Camera( camera_config config)
     {
-        p_lock=new mutex;
-        p_src=new VideoSrc(QString("/root/video/test.264"));
-        p_handler=new VideoHandler();
-       video_src_thread=THREAD_DEF(Camera,get_frame);
-            video_src_thread->detach();
-//        video_sink_thread=THREAD_DEF(Camera,process_frame);
-//            video_sink_thread->detach();
 
-             test_flg=1;
-//        Mat *m1;
-//        while(1)
-//        {
-//            p_lock->lock();
-//           m1=p_src->get_frame();
-//           p_handler->set_frame(m1);
-//           this_thread::sleep_for(chrono::seconds(1));
-//           prt(info,"1");
-//           p_lock->unlock();
-//
-//        }
+        //        p_lock=new mutex;
+        //        p_src=new VideoSrc(QString("/root/video/test.264"));
+        //        p_handler=new VideoHandler();
+        //        video_src_thread=THREAD_DEF(Camera,get_frame);
+        //        video_src_thread->detach();
+        //        video_sink_thread=THREAD_DEF(Camera,process_frame);
+        //            video_sink_thread->detach();
+
+        d.testflg=12;
+        d.p_lock=new mutex();
+        d.p_src=new VideoSrc(QString("/root/video/test.264"));
+        d.p_handler=new VideoHandler();
+        d.video_sink_thread=new thread(get_frame,&d);
+        d.video_src_thread=new thread(process_frame,&d);
+        d.quit_flag=false;
+
+        //         d.video_sink_thread->detach();
+        //         d.video_src_thread->detach();
+
+        //        Mat *m1;
+        //        while(1)
+        //        {
+        //            p_lock->lock();
+        //           m1=p_src->get_frame();
+        //           p_handler->set_frame(m1);
+        //           this_thread::sleep_for(chrono::seconds(1));
+        //           prt(info,"1");
+        //           p_lock->unlock();
+        //
+        //        }
     }
-//    Camera(const Camera &c)
-//    {
+    //    Camera(const Camera &c)
+    //    {
 
-//       p_src= c.p_src;
-//    }
+    //       p_src= c.p_src;
+    //    }
     ~Camera()
     {
-          delete p_lock;
+        //        while(1)
+        //            ;
+        d.quit_flag=true;
+        d.video_sink_thread->join();
+        d.video_src_thread->join();
+
+        delete d.video_sink_thread;
+        delete d.video_src_thread;
+        //         d.video_sink_thread->join();
+        //         d.video_src_thread->join();
+
+
+        delete d.p_handler;
+        delete d.p_src;
+
+        //  delete p_lock;
         //delete p_handler;
         //     delete p_src;
         //        delete video_src_thread;
@@ -1270,81 +1313,95 @@ public:
 
     void restart(camera_config new_cfg)
     {
-        quit_flag=true;
-        video_src_thread->join();
-        video_sink_thread->join();
-        cfg=new_cfg;
-        video_src_thread=THREAD_DEF(Camera,get_frame);
-        video_sink_thread=THREAD_DEF(Camera,process_frame);
+        //        quit_flag=true;
+        //        video_src_thread->join();
+        //        video_sink_thread->join();
+        //        cfg=new_cfg;
+        //   video_src_thread=THREAD_DEF(Camera,get_frame);
+        //   video_sink_thread=THREAD_DEF(Camera,process_frame);
     }
     int try_restart(camera_config new_cfg)//experinmental
     {
-        quit_flag=true;
-        if(video_src_thread->joinable())
-            video_src_thread->detach();
-        if(video_sink_thread->joinable())
-            video_sink_thread->detach();
-        cfg=new_cfg;
-        this_thread::sleep_for(chrono::seconds(1));
+        //        quit_flag=true;
+        //        if(video_src_thread->joinable())
+        //            video_src_thread->detach();
+        //        if(video_sink_thread->joinable())
+        //            video_sink_thread->detach();
+        //        cfg=new_cfg;
+        //        this_thread::sleep_for(chrono::seconds(1));
 
-        if(quit_flag==true&&quit_flag_src==true&&quit_flag_sink==true){
-            quit_flag=false;
-            quit_flag_sink=false;
-            quit_flag_src=false;
-            video_src_thread=THREAD_DEF(Camera,get_frame);
-            video_sink_thread=THREAD_DEF(Camera,process_frame);
-            return 0;
-        }else{
-            return 1;
-        }
+        //        if(quit_flag==true&&quit_flag_src==true&&quit_flag_sink==true){
+        //            quit_flag=false;
+        //            quit_flag_sink=false;
+        //            quit_flag_src=false;
+        //     //       video_src_thread=THREAD_DEF(Camera,get_frame);
+        //      //      video_sink_thread=THREAD_DEF(Camera,process_frame);
+        //            return 0;
+        //        }else{
+        //            return 1;
+        //        }
     }
 private:
-    void get_frame()
+    static void get_frame(data_t *data)
     {
-        while(!quit_flag){
-            prt(info,"getting frame");
-            p_mt=p_src->get_frame();
-            p_lock->lock();
+        //        while(!quit_flag){
+        //            prt(info,"getting frame");
+        //            p_mt=p_src->get_frame();
+        //            p_lock->lock();
 
-         //   frame_list.push_front(*p_mt);
-            test_flg++;
-            prt(info,"++ %d",test_flg);
-            p_lock->unlock();
-            prt(info,"%d",frame_list.size());
-            this_thread::sleep_for(chrono::seconds(1));
+        //         //   frame_list.push_front(*p_mt);
+        //            test_flg++;
+        //            prt(info,"++ %d",test_flg);
+        //            p_lock->unlock();
+        //            prt(info,"%d",frame_list.size());
+        //            this_thread::sleep_for(chrono::seconds(1));
+        //        }
+        //        quit_flag_src=true;
+        while(!data->quit_flag){
+            data->p_lock->lock();
+            //  data->p_mt=data->p_src->get_frame();
+            data->frame_list.push_back(*data->p_src->get_frame());
+            prt(info,"get : %d",data->frame_list.size());
+
+            data->p_lock->unlock();
+             this_thread::sleep_for(chrono::milliseconds(100));
+         //   this_thread::sleep_for(chrono::seconds(1));
         }
-        quit_flag_src=true;
     }
-    void process_frame()
+    static void process_frame(data_t *data)
     {
-        QByteArray ba;
-        while(!quit_flag){
-            prt(info,"processing frame");
-            p_lock->lock();
-            test_flg--;
+        //        QByteArray ba;
+        //        while(!quit_flag){
+        //            prt(info,"processing frame");
+        //            p_lock->lock();
+        //            test_flg--;
 
-            prt(info,"-- %d",test_flg);
-//            if(frame_list.size()>1){
-//                p_handler->set_frame(&(*frame_list.end()));
 
-//                p_handler->work(ba);
-//            }
-            p_lock->unlock();
-            this_thread::sleep_for(chrono::seconds(1));
+        ////            if(frame_list.size()>1){
+        ////                p_handler->set_frame(&(*frame_list.end()));
+
+        ////                p_handler->work(ba);
+        ////            }
+        //            p_lock->unlock();
+        //            this_thread::sleep_for(chrono::seconds(1));
+        //        }
+        //        quit_flag_sink=true;
+
+        while(!data->quit_flag){
+            data->p_lock->lock();
+            if(data->frame_list.size()>0){
+                prt(info,"process : %d",data->frame_list.size());
+                data->p_handler->set_frame(&(*data->frame_list.begin()));
+
+                data->p_handler->work();
+                  data->frame_list.pop_front();
+            }
+            data->p_lock->unlock();
+            //this_thread::sleep_for(chrono::seconds(1));
         }
-        quit_flag_sink=true;
+
     }
-    bool quit_flag;
-    bool quit_flag_src;
-    bool quit_flag_sink;
-    thread *video_src_thread;
-    thread *video_sink_thread;
-    camera_config cfg;
-    VideoSrc *p_src;
-    VideoHandler * p_handler;
-    Mat* p_mt;
-    deque <Mat> frame_list;
-    mutex *p_lock;
+
 };
 
 class CameraManager{
