@@ -1126,8 +1126,12 @@ public:
             // int test=  waitKey(1);
             //     printf("%d\n",test);
             Mat frame(*frame_mat);
-              imshow("url",frame);
-  // waitKey(1);
+          //  cv::namedWindow("1111")
+            if(!frame.empty())
+             imshow("url",frame);
+        //     waitKey(2000);
+            //  return true;
+        //     waitKey(25);
             //    QThread::msleep(1);
 
             //   return 0;
@@ -1201,7 +1205,7 @@ public:
                     //                    waitKey(1);
 
                     //   rectangle(frame,rect,Scalar(0,255,0),2);
-                    // imshow("result", frame);
+                 //   imshow("result", frame);
                     //outputVideo << frame;
                     //   waitKey(1);
                     objs.clear();
@@ -1239,11 +1243,13 @@ public:
         bool quit_flag_sink;
         thread *video_src_thread;
         thread *video_sink_thread;
+        thread *record_thread;
         camera_config cfg;
         VideoSrc *p_src;
         VideoHandler * p_handler;
         Mat* p_mt;
         deque <Mat> frame_list;
+        deque <int> int_list;
         mutex *p_lock;
         int testflg;
     }data_t;
@@ -1264,6 +1270,8 @@ public:
         d.p_src=new VideoSrc(QString("/root/video/test.264"));
         d.p_handler=new VideoHandler();
         d.video_sink_thread=new thread(get_frame,&d);
+        d.video_sink_thread=new thread(get_frame,&d);
+        d.record_thread=new thread(record_fun,&d);
         d.video_src_thread=new thread(process_frame,&d);
         d.quit_flag=false;
 
@@ -1295,11 +1303,15 @@ public:
         d.video_sink_thread->join();
         d.video_src_thread->join();
 
+        d.record_thread->join();
+
         delete d.video_sink_thread;
         delete d.video_src_thread;
+        delete d.record_thread;
         //         d.video_sink_thread->join();
         //         d.video_src_thread->join();
 
+        delete d.record_thread;
 
         delete d.p_handler;
         delete d.p_src;
@@ -1342,6 +1354,14 @@ public:
         //        }
     }
 private:
+    static void record_fun(data_t *data)
+    {
+        while(!data->quit_flag)
+        {
+            this_thread::sleep_for(chrono::milliseconds(1000));
+        }
+    }
+
     static void get_frame(data_t *data)
     {
         //        while(!quit_flag){
@@ -1360,12 +1380,14 @@ private:
         while(!data->quit_flag){
             data->p_lock->lock();
             //  data->p_mt=data->p_src->get_frame();
+            //prt(info,"get : %d",data->testflg++);
             data->frame_list.push_back(*data->p_src->get_frame());
-            prt(info,"get : %d",data->frame_list.size());
+            //    data->int_list.push_back(data->testflg);
+            prt(info,"get frame ");
 
             data->p_lock->unlock();
-             this_thread::sleep_for(chrono::milliseconds(100));
-         //   this_thread::sleep_for(chrono::seconds(1));
+            this_thread::sleep_for(chrono::milliseconds(1000));
+            //   this_thread::sleep_for(chrono::seconds(1));
         }
     }
     static void process_frame(data_t *data)
@@ -1390,25 +1412,31 @@ private:
         while(!data->quit_flag){
             data->p_lock->lock();
             if(data->frame_list.size()>0){
-                prt(info,"process : %d",data->frame_list.size());
+                prt(info,"size : %d",data->frame_list.size());
                 data->p_handler->set_frame(&(*data->frame_list.begin()));
-
+                //                 if(data->int_list.size()>0){
+                //                     prt(info,"process : %d,size %d",(*data->int_list.begin()),data->int_list.size());
+                //                  data->int_list.pop_front();
+                //                }
                 data->p_handler->work();
-                  data->frame_list.pop_front();
+                data->frame_list.pop_front();
+
             }
             data->p_lock->unlock();
+            this_thread::sleep_for(chrono::milliseconds(100));
             //this_thread::sleep_for(chrono::seconds(1));
         }
 
     }
 
 };
-
+#include <X11/Xlib.h>
 class CameraManager{
 
 public:
     CameraManager()
     {
+        XInitThreads();
         p_cfg=new CameraConfiguration("/root/repo-github/pedestrian-v12/server/config.json");
         start_all();
     }

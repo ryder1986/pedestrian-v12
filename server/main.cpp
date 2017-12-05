@@ -182,22 +182,38 @@ public:
 //struct TA::S1 TA::s1={
 //    17,118};
 //Camera::data_t Camera::d={};
+
+class MyTool{
+    typedef void (*ss)() ;
+public:
+    static void start_fun(void *fun)
+    {
+        ss p=(ss)fun;
+        p();
+    }
+};
+void test_fun(...)
+{
+    prt(info,"111");
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
     //        Test1 t1;
     //        t1.test_fun();
-     Test *t=new Test();
+    Test *t=new Test();
+    //  MyTool::start_fun((void *)test_fun);
     // prt(info,"111");
-   //  this_thread::sleep_for(chrono::seconds(3));
-  //   delete t;
+    //  this_thread::sleep_for(chrono::seconds(3));
+    //   delete t;
     prt(info,"loop begin");
-   // t.fun111();
-   // TA ta;
-//    TA ta1;
-  //   ta.s1.a=111;
-  //  ta.sss();
-   // TA::flg=111;
+    // t.fun111();
+    // TA ta;
+    //    TA ta1;
+    //   ta.s1.a=111;
+    //  ta.sss();
+    // TA::flg=111;
     return a.exec();
 }
 //class SString
